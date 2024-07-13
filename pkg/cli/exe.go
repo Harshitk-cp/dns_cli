@@ -8,7 +8,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "dns-query-cli",
+	Use:   "dnscli",
 	Short: "A simple DNS query tool",
 	Long:  `A simple DNS query tool built using Cobra CLI in Go.`,
 }

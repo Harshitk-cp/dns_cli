@@ -18,6 +18,10 @@ var (
 )
 
 func ResolveDNS(question dns.Question) (*dns.Msg, error) {
+	if question.Qtype == dns.TypePTR {
+		return resolveReverseDNS(question)
+	}
+
 	servers := rootServers
 	for i := 0; i < 10; i++ {
 		response, err := queryServers(question, servers)
@@ -35,21 +39,6 @@ func ResolveDNS(question dns.Question) (*dns.Msg, error) {
 		}
 	}
 	return nil, fmt.Errorf("resolution incomplete after 10 iterations")
-}
-
-func queryServers(question dns.Question, servers []string) (*dns.Msg, error) {
-	m := new(dns.Msg)
-	m.SetQuestion(question.Name, question.Qtype)
-	m.RecursionDesired = true
-
-	c := new(dns.Client)
-	for _, server := range servers {
-		response, _, err := c.Exchange(m, server+":53")
-		if err == nil {
-			return response, nil
-		}
-	}
-	return nil, fmt.Errorf("failed to query all servers")
 }
 
 func extractNameservers(msg *dns.Msg) []string {
@@ -77,7 +66,15 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 		return
 	}
 
-	response, err := ResolveDNS(question)
+	var response *dns.Msg
+	var err error
+
+	if question.Qtype == dns.TypePTR {
+		response, err = resolveReverseDNS(question)
+	} else {
+		response, err = ResolveDNS(question)
+	}
+
 	if err != nil {
 		log.Printf("Failed to resolve: %s\n", err.Error())
 		dns.HandleFailed(w, r)

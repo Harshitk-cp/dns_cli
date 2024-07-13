@@ -2,33 +2,44 @@ package cli
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/miekg/dns"
 )
 
-func QueryDNS(server, domain, recordType string, verbose bool) {
+func QueryDNS(server, domain string, opts QueryOptions) error {
 	c := new(dns.Client)
 	m := new(dns.Msg)
-	rt, ok := dns.StringToType[recordType]
+	rt, ok := dns.StringToType[opts.RecordType]
 	if !ok {
-		log.Fatalf("Unknown record type: %s\n", recordType)
+		return fmt.Errorf("unknown record type: %s", opts.RecordType)
 	}
 	m.SetQuestion(dns.Fqdn(domain), rt)
 	r, _, err := c.Exchange(m, server+":53")
 	if err != nil {
-		log.Fatalf("Failed to query DNS: %v\n", err)
+		return fmt.Errorf("failed to query DNS: %w", err)
 	}
 
-	if verbose {
-		fmt.Println(r.String())
-	} else {
-		if len(r.Answer) == 0 {
-			fmt.Println("No records found")
-			return
-		}
+	printResponse(r, domain, opts)
+	return nil
+}
 
-		for _, ans := range r.Answer {
+func printResponse(r *dns.Msg, domain string, opts QueryOptions) {
+	if opts.Verbose {
+		fmt.Println(r.String())
+		return
+	}
+
+	if len(r.Answer) == 0 {
+		fmt.Println("No records found")
+		return
+	}
+
+	for _, ans := range r.Answer {
+		if opts.RecordType == "PTR" {
+			if ptr, ok := ans.(*dns.PTR); ok {
+				fmt.Printf("%s => %s\n", domain, ptr.Ptr)
+			}
+		} else {
 			fmt.Println(ans.String())
 		}
 	}

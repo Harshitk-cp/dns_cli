@@ -1,5 +1,5 @@
 #exampe.yaml
 dnsServerAddr: ":53"
 dohServerAddr: ":443"
-dohCertFile: "../.cert/cert.pem"
-dohKeyFile: "../.cert/key.pem"
+dohCertFile: "/app/cert/cert.pem"
+dohKeyFile: "/app/cert/key.pem"
