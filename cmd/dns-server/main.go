@@ -3,27 +3,30 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/Harshitk-cp/dns-cli/pkg/doh"
 	"github.com/Harshitk-cp/dns-cli/pkg/server"
+	"github.com/Harshitk-cp/dns-cli/pkg/utils"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Fatalf("Usage: %s <start|stop|status>\n", os.Args[0])
-	}
+	config := utils.LoadConfig("config/config.yaml")
+	log.Println("Starting DNS and DoH servers...")
 
-	command := os.Args[1]
+	go server.StartDNSServer(config.DNSServerAddr)
 
-	switch command {
-	case "start":
-		log.Println("DNS server started")
-		server.StartDNSServer()
-	case "stop":
-		server.StopDNSServer()
-		log.Println("DNS server stopped")
-	case "status":
-		log.Println("DNS server status: running")
-	default:
-		log.Fatalf("Unknown command: %s\n", command)
-	}
+	go doh.StartDoHServer(config.DoHCertFile, config.DoHKeyFile, config.DOHServerAddr)
+
+	waitForTerminationSignal()
+}
+
+func waitForTerminationSignal() {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+
+	server.StopDNSServer()
+	log.Println("DNS server stopped")
 }

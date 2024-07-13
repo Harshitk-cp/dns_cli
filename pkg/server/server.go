@@ -14,11 +14,11 @@ var (
 	dnsServer *dns.Server
 )
 
-func StartDNSServer() {
+func StartDNSServer(addr string) {
 	dns.HandleFunc(".", resolver.HandleDNSRequest)
-	dnsServer = &dns.Server{Addr: ":53", Net: "udp"}
+	dnsServer = &dns.Server{Addr: addr, Net: "udp"}
 	go func() {
-		log.Println("Starting DNS server on :53")
+		log.Printf("Starting DNS server on %s\n", addr)
 		err := dnsServer.ListenAndServe()
 		if err != nil {
 			log.Fatalf("Failed to start DNS server: %s\n", err.Error())
@@ -35,7 +35,6 @@ func StartDNSServer() {
 func StopDNSServer() {
 	if dnsServer != nil {
 		dnsServer.Shutdown()
-		log.Println("DNS server stopped")
 	} else {
 		log.Println("DNS server is not running")
 	}
