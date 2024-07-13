@@ -1,0 +1,15 @@
+# docker-compose.yml
+
+version: "3.8"
+
+services:
+  dns-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dns-server
+    ports:
+      - "53:53/udp"
+      - "443:443"
+    volumes:
+      - /Users/kagelol/.cert:/app/cert
