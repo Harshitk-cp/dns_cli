@@ -12,11 +12,13 @@ import (
 	"github.com/miekg/dns"
 )
 
+var dohServer *http.Server
+
 func StartDoHServer(certFile, keyFile, addr string) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/dns-query", handleDoHRequest)
 
-	server := &http.Server{
+	dohServer = &http.Server{
 		Addr:    addr,
 		Handler: mux,
 		TLSConfig: &tls.Config{
@@ -25,9 +27,15 @@ func StartDoHServer(certFile, keyFile, addr string) {
 	}
 
 	log.Printf("Starting DoH server on %s\n", addr)
-	err := server.ListenAndServeTLS(certFile, keyFile)
+	err := dohServer.ListenAndServeTLS(certFile, keyFile)
 	if err != nil {
 		log.Fatalf("Failed to start DoH server: %s\n", err.Error())
+	}
+}
+
+func StopDoHServer() {
+	if dohServer != nil {
+		dohServer.Close()
 	}
 }
 

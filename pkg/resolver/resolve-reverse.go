@@ -1,26 +1,30 @@
 package resolver
 
 import (
-	"fmt"
+	"log"
 	"net"
 	"strings"
 
 	"github.com/miekg/dns"
 )
 
-func resolveReverseDNS(question dns.Question) (*dns.Msg, error) {
+func resolveReverseDNS(question dns.Question, r *dns.Msg) (*dns.Msg, error) {
 	ip := extractIPFromReverseDomain(question.Name)
-	if ip == "" {
-		return nil, fmt.Errorf("invalid reverse DNS query")
-	}
 
 	names, err := net.LookupAddr(ip)
 	if err != nil {
-		return nil, err
+
+		response := new(dns.Msg)
+		response.SetRcode(r, dns.RcodeNameError)
+		response.Authoritative = true
+		return response, nil
 	}
+
+	log.Printf("Resolving reverse DNS query for IP: %s\n", ip)
 
 	response := new(dns.Msg)
 	response.SetReply(new(dns.Msg))
+	response.Question = r.Question
 	response.Authoritative = true
 
 	for _, name := range names {
