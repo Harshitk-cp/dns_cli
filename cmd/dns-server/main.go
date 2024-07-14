@@ -28,5 +28,6 @@ func waitForTerminationSignal() {
 	<-sigCh
 
 	server.StopDNSServer()
-	log.Println("DNS server stopped")
+	doh.StopDoHServer()
+	log.Println("Servers stopped")
 }

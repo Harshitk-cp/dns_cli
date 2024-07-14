@@ -18,8 +18,9 @@ var (
 )
 
 func ResolveDNS(question dns.Question) (*dns.Msg, error) {
-	if question.Qtype == dns.TypePTR {
-		return resolveReverseDNS(question)
+	key := question.String()
+	if cachedMsg, found := dnsCache.Get(key); found {
+		return cachedMsg, nil
 	}
 
 	servers := rootServers
@@ -30,6 +31,8 @@ func ResolveDNS(question dns.Question) (*dns.Msg, error) {
 		}
 
 		if response.Rcode == dns.RcodeSuccess && len(response.Answer) > 0 {
+			ttl := time.Duration(response.Answer[0].Header().Ttl) * time.Second
+			dnsCache.Set(question.String(), response, ttl)
 			return response, nil
 		}
 
@@ -70,7 +73,7 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	var err error
 
 	if question.Qtype == dns.TypePTR {
-		response, err = resolveReverseDNS(question)
+		response, err = resolveReverseDNS(question, r)
 	} else {
 		response, err = ResolveDNS(question)
 	}
