@@ -72,7 +72,7 @@ func handleDoHRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := resolver.ResolveDNS(dnsMsg.Question[0])
+	response, err := resolver.ResolveDNS(dnsMsg.Question[0], dnsMsg)
 	if err != nil {
 		http.Error(w, "Failed to resolve DNS query", http.StatusInternalServerError)
 		return
