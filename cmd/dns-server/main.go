@@ -6,7 +6,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/Harshitk-cp/dns-cli/pkg/adblock"
 	"github.com/Harshitk-cp/dns-cli/pkg/doh"
+	"github.com/Harshitk-cp/dns-cli/pkg/resolver"
 	"github.com/Harshitk-cp/dns-cli/pkg/server"
 	"github.com/Harshitk-cp/dns-cli/pkg/utils"
 )
@@ -14,6 +16,9 @@ import (
 func main() {
 	config := utils.LoadConfig("config/config.yaml")
 	log.Println("Starting DNS and DoH servers...")
+
+	adDomainList := adblock.FetchAdDomains(utils.AdDomainUrl)
+	resolver.InitAdBlockList(adDomainList)
 
 	go server.StartDNSServer(config.DNSServerAddr)
 

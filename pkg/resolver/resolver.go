@@ -17,10 +17,14 @@ var (
 	dnsCache = cache.NewDNSCache()
 )
 
-func ResolveDNS(question dns.Question) (*dns.Msg, error) {
+func ResolveDNS(question dns.Question, r *dns.Msg) (*dns.Msg, error) {
 	key := question.String()
 	if cachedMsg, found := dnsCache.Get(key); found {
 		return cachedMsg, nil
+	}
+
+	if IsAdDomain(question.Name) {
+		return blockResponse(question, r), nil
 	}
 
 	servers := rootServers
@@ -75,7 +79,7 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if question.Qtype == dns.TypePTR {
 		response, err = resolveReverseDNS(question, r)
 	} else {
-		response, err = ResolveDNS(question)
+		response, err = ResolveDNS(question, r)
 	}
 
 	if err != nil {

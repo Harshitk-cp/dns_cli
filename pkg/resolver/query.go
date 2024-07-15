@@ -7,23 +7,35 @@ import (
 )
 
 func queryServers(question dns.Question, servers []string) (*dns.Msg, error) {
+	seen := make(map[string]struct{})
 	for _, server := range servers {
 		response, err := queryServer(question, server)
 		if err == nil {
+			var uniqueAnswers []dns.RR
 			for _, answer := range response.Answer {
+				if _, found := seen[answer.String()]; !found {
+					seen[answer.String()] = struct{}{}
+					uniqueAnswers = append(uniqueAnswers, answer)
+				}
 				if cname, ok := answer.(*dns.CNAME); ok {
 					cnameQuestion := dns.Question{
 						Name:   cname.Target,
 						Qtype:  question.Qtype,
 						Qclass: dns.ClassINET,
 					}
-					cnameResponse, err := ResolveDNS(cnameQuestion)
+					cnameResponse, err := ResolveDNS(cnameQuestion, response)
 					if err != nil {
 						return nil, err
 					}
-					response.Answer = append(response.Answer, cnameResponse.Answer...)
+					for _, cnameAnswer := range cnameResponse.Answer {
+						if _, found := seen[cnameAnswer.String()]; !found {
+							seen[cnameAnswer.String()] = struct{}{}
+							uniqueAnswers = append(uniqueAnswers, cnameAnswer)
+						}
+					}
 				}
 			}
+			response.Answer = uniqueAnswers
 			return response, nil
 		}
 	}
